@@ -23,7 +23,8 @@ func New(threshold, period, speakers int, channel string, verbose bool) *RTM {
 	}
 	// We have to create classic slack app using RTM.
 	// Classic slack app require OAuth token to call REST API separately from bot token.
-	detector := rage.New(threshold, period, speakers, channel, logger, os.Getenv("OAUTH_TOKEN"))
+	slackClient := slack.New(os.Getenv("OAUTH_TOKEN"))
+	detector := rage.New(threshold, period, speakers, channel, logger, slackClient)
 	return &RTM{
 		channel,
 		token,

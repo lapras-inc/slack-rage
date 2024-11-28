@@ -2,6 +2,7 @@ package event
 
 import (
 	"fmt"
+	"github.com/slack-go/slack"
 	"net/http"
 	"os"
 	"time"
@@ -26,7 +27,8 @@ func NewServer(threshold, period, speakers int, channel string, verbose bool) *S
 	if verbose {
 		logger.SetLevel(logrus.DebugLevel)
 	}
-	detector := rage.New(threshold, period, speakers, channel, logger, token)
+	slackClient := slack.New(token)
+	detector := rage.New(threshold, period, speakers, channel, logger, slackClient)
 	return &Server{
 		channel,
 		token,
