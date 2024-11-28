@@ -27,9 +27,9 @@ type Rage struct {
 	notifyHistory map[string]time.Time
 }
 
-func New(threshold, period, speakers int, channel string, logger *logrus.Logger, token string) *Rage {
+func New(threshold, period, speakers int, channel string, logger *logrus.Logger, slackClient *slack.Client) *Rage {
 	notifyHistory := map[string]time.Time{}
-	slackClient := slack.New(token)
+
 	return &Rage{
 		threshold,
 		period,
