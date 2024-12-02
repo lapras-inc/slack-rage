@@ -26,15 +26,13 @@ func New(threshold, period, speakers int, channel string, verbose bool) *Bolt {
 
 	botToken := os.Getenv("SLACK_BOT_TOKEN")
 	appToken := os.Getenv("SLACK_APP_TOKEN")
-	slackClient := slack.New(botToken)
-	detector := rage.New(threshold, period, speakers, channel, logger, slackClient)
 	webApi := slack.New(
 		botToken,
 		slack.OptionAppLevelToken(appToken),
 		slack.OptionDebug(verbose),
 		slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
 	)
-
+	detector := rage.New(threshold, period, speakers, channel, logger, webApi)
 	return &Bolt{
 		channel,
 		verbose,
