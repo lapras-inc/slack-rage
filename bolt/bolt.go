@@ -4,6 +4,7 @@ import (
 	"github.com/h3poteto/slack-rage/rage"
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
 	"log"
 	"os"
@@ -59,16 +60,34 @@ func (b *Bolt) Start() {
 	go func() {
 		for envelope := range socketMode.Events {
 			switch envelope.Type {
-			case socketmode.EventTypeInteractive:
-				callback, ok := envelope.Data.(slack.InteractionCallback)
+			case socketmode.EventTypeConnecting:
+				socketMode.Debugf("Connecting to Slack with Socket Mode...")
+			case socketmode.EventTypeConnectionError:
+				socketMode.Debugf("Connection failed: %v", envelope)
+			case socketmode.EventTypeConnected:
+				socketMode.Debugf("Connected to Slack with Socket Mode.")
+			case socketmode.EventTypeEventsAPI:
+				eventsAPIEvent, ok := envelope.Data.(slackevents.EventsAPIEvent)
 				if !ok {
-					b.logger.Debugf("Ignored %+v", envelope)
+					socketMode.Debugf("Ignored %+v", envelope)
 					continue
 				}
-				b.logger.Infof("Interaction received: %+v", callback)
-				err := b.detector.Detect(callback.Channel.ID, callback.Message.Text)
-				if err != nil {
-					b.logger.Errorf("Detect error: %v", err)
+				socketMode.Ack(*envelope.Request)
+
+				switch eventsAPIEvent.Type {
+				case slackevents.CallbackEvent:
+					socketMode.Debugf("CallbackEvent received: %+v", eventsAPIEvent.InnerEvent)
+					switch event := eventsAPIEvent.InnerEvent.Data.(type) {
+					case *slackevents.MessageEvent:
+						err := b.detector.Detect(event.Channel, event.TimeStamp)
+						if err != nil {
+							socketMode.Debugf("Detect failed: %v", err)
+						}
+					default:
+						socketMode.Debugf("Skipped: %v", event)
+					}
+				default:
+					socketMode.Debugf("Skipped: %v", eventsAPIEvent.Type)
 				}
 			default:
 				socketMode.Debugf("Skipped: %v", envelope.Type)
